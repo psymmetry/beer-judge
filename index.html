@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17492F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Beer Judge">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="Score beers on eight aspects by tapping a number and get an overall score out of 10.">
 <title>Beer Judge</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -77,6 +85,7 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
 body {
@@ -251,6 +260,21 @@ button, input, textarea { font: inherit; color: inherit; }
 .empty { padding: 22px 18px 26px; color: var(--muted); }
 .empty strong { display: block; color: var(--fg); margin-bottom: 4px; }
 
+/* Share image */
+.msg { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--danger); }
+.msg:empty { display: none; }
+.overlay {
+  position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.62);
+  display: flex; align-items: flex-start; justify-content: center; overflow-y: auto;
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet { width: 100%; max-width: 420px; margin: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.sheet img { display: block; width: 100%; height: auto; border-radius: 4px; background: var(--bg); }
+.sheet .hint { margin: 0; font-size: 13px; color: var(--muted); }
+
 /* Backup */
 .backup { border-top: 1px solid var(--line); padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
 .backup p { margin: 0; font-size: 13px; color: var(--muted); }
@@ -313,7 +337,9 @@ button, input, textarea { font: inherit; color: inherit; }
 
         <div class="sec actions">
           <button type="button" class="btn primary" id="newBeer">Judge another beer</button>
+          <button type="button" class="btn" id="shareBtn">Share image</button>
           <button type="button" class="btn danger" id="deleteBeer">Delete this beer</button>
+          <p class="msg" id="shareMsg" role="status"></p>
         </div>
       </div>
 
@@ -345,6 +371,19 @@ button, input, textarea { font: inherit; color: inherit; }
         <textarea id="exportText" readonly hidden aria-label="Backup text to copy"></textarea>
       </div>
     </aside>
+  </div>
+</div>
+
+<div class="overlay" id="shareOverlay" role="dialog" aria-modal="true" aria-label="Share image" hidden>
+  <div class="sheet">
+    <img id="shareImg" alt="Score card for this beer">
+    <p class="hint">On iPhone you can also press and hold the picture and choose Add to Photos.</p>
+    <p class="msg" id="shareErr" role="status"></p>
+    <div class="actions">
+      <button type="button" class="btn primary" id="shareDo" hidden>Share</button>
+      <button type="button" class="btn" id="shareSave">Save image</button>
+      <button type="button" class="btn" id="shareClose">Close</button>
+    </div>
   </div>
 </div>
 
@@ -692,6 +731,179 @@ button, input, textarea { font: inherit; color: inherit; }
     rd.readAsText(file);
   }
 
+  /* ---------- share image ---------- */
+  var CARD = {
+    bg: "#17492F", fg: "#FFF4D6", sub: "#B9D3C2", accent: "#F2B23A", ink: "#1B1403",
+    aspect: ["#F2B134", "#EC7B5C", "#E8503A", "#3FB5A3", "#9382E6", "#72C451", "#4B9FE6", "#E873A9"],
+    band: ["#F0705A", "#F29A4A", "#F2C94C", "#9BD65A", "#4FD08A"]
+  };
+  var shareUrl = null, shareFile = null, shareName = "";
+  function bandHex(avg) { return CARD.band[avg < 3 ? 0 : avg < 5 ? 1 : avg < 6.5 ? 2 : avg < 8 ? 3 : 4]; }
+  function rr(ctx, x, y, w, hh, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r);
+    ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function fitLine(ctx, text, maxW) {
+    if (ctx.measureText(text).width <= maxW) return text;
+    while (text.length > 1 && ctx.measureText(text + "…").width > maxW) text = text.slice(0, -1);
+    return text + "…";
+  }
+  function wrapLines(ctx, text, maxW, maxLines) {
+    var words = text.split(/\s+/).filter(Boolean), lines = [], cur = "";
+    words.forEach(function (w) {
+      var t = cur ? cur + " " + w : w;
+      if (!cur || ctx.measureText(t).width <= maxW) cur = t; else { lines.push(cur); cur = w; }
+    });
+    if (cur) lines.push(cur);
+    if (lines.length > maxLines) { lines = lines.slice(0, maxLines); lines[maxLines - 1] = lines[maxLines - 1] + "…"; }
+    return lines.map(function (l) { return fitLine(ctx, l, maxW); });
+  }
+  function loadImg(src) {
+    return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = src; });
+  }
+  function drawCard(b) {
+    var W = 1080, H = 1350, c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    var ctx = c.getContext("2d");
+    var DISP = '"Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif';
+    var SANS = '"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif';
+    var MONO = '"IBM Plex Mono", ui-monospace, Menlo, monospace';
+    var fontsReady = Promise.resolve();
+    try {
+      fontsReady = Promise.all([
+        document.fonts.load('700 64px "Barlow Condensed"'), document.fonts.load('400 28px "IBM Plex Sans"'),
+        document.fonts.load('500 28px "IBM Plex Sans"'), document.fonts.load('500 28px "IBM Plex Mono"')
+      ]).catch(function () {});
+    } catch (e) {}
+    var photoReady = b.photo ? loadImg(b.photo).catch(function () { return null; }) : Promise.resolve(null);
+    return Promise.all([fontsReady, photoReady]).then(function (r) {
+      var img = r[1], avg = average(b);
+      ctx.fillStyle = CARD.bg; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = CARD.accent; ctx.fillRect(0, 0, W, 18);
+      ctx.fillStyle = "rgba(255,255,255,0.07)";
+      [[1010, 70, 15], [962, 112, 9], [1034, 128, 7], [916, 64, 6]].forEach(function (d) { ctx.beginPath(); ctx.arc(d[0], d[1], d[2], 0, Math.PI * 2); ctx.fill(); });
+      ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+      ctx.fillStyle = CARD.accent; ctx.font = "700 40px " + DISP;
+      if ("letterSpacing" in ctx) ctx.letterSpacing = "4px";
+      ctx.fillText("BEER JUDGE", 64, 92);
+      if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+      // photo
+      var px = 64, py = 130, pw = 400, ph = 533;
+      ctx.save(); rr(ctx, px, py, pw, ph, 10); ctx.clip();
+      ctx.fillStyle = "rgba(255,255,255,0.08)"; ctx.fillRect(px, py, pw, ph);
+      if (img) {
+        var sc = Math.max(pw / img.width, ph / img.height), dw = img.width * sc, dh = img.height * sc;
+        ctx.drawImage(img, px + (pw - dw) / 2, py + (ph - dh) / 2, dw, dh);
+      } else {
+        var cx = px + pw / 2, cy = py + ph / 2;
+        ctx.strokeStyle = CARD.sub; ctx.lineWidth = 6; ctx.lineJoin = "round";
+        ctx.beginPath(); ctx.moveTo(cx - 22, cy - 110); ctx.lineTo(cx + 22, cy - 110); ctx.lineTo(cx + 22, cy - 50);
+        ctx.quadraticCurveTo(cx + 60, cy - 20, cx + 60, cy + 30); ctx.lineTo(cx + 60, cy + 105); ctx.lineTo(cx - 60, cy + 105);
+        ctx.lineTo(cx - 60, cy + 30); ctx.quadraticCurveTo(cx - 60, cy - 20, cx - 22, cy - 50); ctx.closePath(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - 60, cy + 45); ctx.lineTo(cx + 60, cy + 45); ctx.stroke();
+      }
+      ctx.restore();
+
+      // name, style
+      var x0 = 520, colW = 496;
+      ctx.fillStyle = CARD.fg;
+      var title = (b.name.trim() || "Untitled beer").toUpperCase(), lines = [], tsize = 72, sizes = [72, 62, 54, 48, 44];
+      for (var si = 0; si < sizes.length; si++) {
+        tsize = sizes[si]; ctx.font = "700 " + tsize + "px " + DISP;
+        lines = wrapLines(ctx, title, colW, 99);
+        if (lines.length <= (tsize >= 62 ? 2 : 3) && lines.every(function (l) { return ctx.measureText(l).width <= colW; })) break;
+      }
+      if (lines.length > 3) lines = wrapLines(ctx, title, colW, 3);
+      var tlh = Math.round(tsize * 1.06);
+      lines.forEach(function (l, i) { ctx.fillText(l, x0, 196 + i * tlh); });
+      var ny = 196 + (lines.length - 1) * tlh;
+      if (b.style.trim()) {
+        ctx.fillStyle = CARD.sub; ctx.font = "400 30px " + SANS;
+        ctx.fillText(fitLine(ctx, b.style.trim(), colW), x0, ny + 50);
+      }
+
+      // score box
+      var by = py + ph - 230;
+      ctx.fillStyle = bandHex(avg); rr(ctx, x0, by, colW, 230, 8); ctx.fill();
+      ctx.fillStyle = "rgba(27,20,3,0.78)"; ctx.font = "600 24px " + SANS; ctx.fillText("OVERALL", x0 + 28, by + 44);
+      ctx.textAlign = "right"; ctx.fillText(verdictFor(avg).toUpperCase(), x0 + colW - 28, by + 44); ctx.textAlign = "left";
+      ctx.fillStyle = CARD.ink; ctx.font = "700 180px " + DISP;
+      var num = avg.toFixed(1); ctx.fillText(num, x0 + 28, by + 202);
+      var nw = ctx.measureText(num).width;
+      ctx.fillStyle = "rgba(27,20,3,0.7)"; ctx.font = "500 34px " + MONO; ctx.fillText("/ 10", x0 + 28 + nw + 14, by + 202);
+
+      // aspect rows
+      ctx.textAlign = "left";
+      ASPECTS.forEach(function (a, i) {
+        var ym = 740 + i * 62 + 31, v = b.scores[a.key], has = typeof v === "number";
+        ctx.fillStyle = CARD.aspect[i]; ctx.fillRect(64, ym - 9, 18, 18);
+        ctx.fillStyle = CARD.fg; ctx.font = "500 28px " + SANS; ctx.fillText(a.label, 96, ym + 10);
+        ctx.fillStyle = "rgba(255,255,255,0.14)"; rr(ctx, 330, ym - 11, 550, 22, 4); ctx.fill();
+        if (has) { ctx.fillStyle = CARD.aspect[i]; rr(ctx, 330, ym - 11, Math.max(8, v * 55), 22, 4); ctx.fill(); }
+        ctx.fillStyle = has ? CARD.fg : CARD.sub; ctx.font = "500 28px " + MONO; ctx.textAlign = "right";
+        ctx.fillText(has ? v + "/10" : "–", 1016, ym + 10); ctx.textAlign = "left";
+      });
+
+      // footer
+      ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.fillRect(64, 1262, 952, 2);
+      ctx.fillStyle = CARD.sub; ctx.font = "400 24px " + SANS;
+      ctx.fillText(new Date().toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }), 64, 1312);
+      if (/^https?:/.test(location.protocol)) {
+        ctx.textAlign = "right";
+        ctx.fillText(fitLine(ctx, location.host + location.pathname.replace(/index\.html$/, ""), 600), 1016, 1312);
+        ctx.textAlign = "left";
+      }
+      return c;
+    });
+  }
+  function shareMsg(t) { $("shareMsg").textContent = t; }
+  function openShare() {
+    var b = current();
+    if (average(b) === null) { shareMsg("Rate at least one aspect first, then share."); return; }
+    shareMsg("");
+    var btn = $("shareBtn"); btn.disabled = true;
+    drawCard(b).then(function (canvas) {
+      return new Promise(function (res) { canvas.toBlob(res, "image/png"); });
+    }).then(function (blob) {
+      if (!blob) throw new Error("no image");
+      closeShare(true);
+      shareUrl = URL.createObjectURL(blob);
+      shareName = "beer-judge-" + (b.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "beer") + ".png";
+      shareFile = null;
+      try { shareFile = new File([blob], shareName, { type: "image/png" }); } catch (e) {}
+      var can = false;
+      try { can = !!(shareFile && navigator.canShare && navigator.canShare({ files: [shareFile] })); } catch (e) {}
+      $("shareImg").src = shareUrl;
+      $("shareDo").hidden = !can;
+      $("shareErr").textContent = "";
+      $("shareOverlay").hidden = false;
+      (can ? $("shareDo") : $("shareSave")).focus();
+    }).catch(function () {
+      shareMsg("Could not make the image. Try again.");
+    }).then(function () { btn.disabled = false; });
+  }
+  function closeShare(silent) {
+    var ov = $("shareOverlay"), wasOpen = !ov.hidden;
+    ov.hidden = true; $("shareImg").removeAttribute("src");
+    if (shareUrl) { URL.revokeObjectURL(shareUrl); shareUrl = null; }
+    if (wasOpen && !silent) $("shareBtn").focus();
+  }
+  function doShare() {
+    if (!shareFile || !navigator.share) return;
+    navigator.share({ files: [shareFile], title: "Beer Judge" }).catch(function (e) {
+      if (e && e.name === "AbortError") return;
+      $("shareErr").textContent = "Sharing did not work. Use Save image instead.";
+    });
+  }
+  function saveShare() {
+    if (!shareUrl) return;
+    var a = document.createElement("a");
+    a.href = shareUrl; a.download = shareName; document.body.appendChild(a); a.click(); a.remove();
+    $("shareErr").textContent = "";
+  }
+
   /* ---------- wire up ---------- */
   function bind() {
     $("beerName").addEventListener("input", function (e) { current().name = e.target.value; renderFlight(); save(); });
@@ -705,6 +917,12 @@ button, input, textarea { font: inherit; color: inherit; }
     box.addEventListener("drop", function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; readImage(f); });
     $("newBeer").addEventListener("click", newBeer);
     $("deleteBeer").addEventListener("click", deleteBeer);
+    $("shareBtn").addEventListener("click", openShare);
+    $("shareDo").addEventListener("click", doShare);
+    $("shareSave").addEventListener("click", saveShare);
+    $("shareClose").addEventListener("click", function () { closeShare(false); });
+    $("shareOverlay").addEventListener("click", function (e) { if (e.target === $("shareOverlay")) closeShare(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("shareOverlay").hidden) closeShare(false); });
     $("exportBtn").addEventListener("click", exportBackup);
     $("importBtn").addEventListener("click", function () { $("importInput").click(); });
     $("importInput").addEventListener("change", function (e) { importBackup(e.target.files && e.target.files[0]); e.target.value = ""; });
@@ -716,6 +934,9 @@ button, input, textarea { font: inherit; color: inherit; }
   syncForm();
   renderFlight();
   save();
+  if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
 })();
 </script>
 </body>
