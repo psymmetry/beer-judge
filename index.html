@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Score beers on eight aspects by tapping a number and get an overall score out of 10.">
+<title>Beer Judge</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: judging card on the left (photo, name, eight tap-to-score aspects, sticky overall score), ranked flight on the right; stacks on phones. */
+:root {
+  color-scheme: light;
+  --bg: #E3EDDF;
+  --surface: #FAFBF8;
+  --fg: #16201A;
+  --muted: #56635A;
+  --line: #D0D8CE;
+  --accent: #1E5A3E;
+  --accent-fg: #FFFFFF;
+  --amber: #E0900F;
+  --amber-soft: #F6E4B9;
+  --amber-ink: #1B1403;
+  --foam: #FFF7E0;
+  --danger: #A12B2B;
+
+  --hero-bg: #17492F;
+  --hero-fg: #FFF4D6;
+  --hero-sub: #B9D3C2;
+  --hero-accent: #F2B23A;
+  /* one colour per aspect, then a red-to-green scale for overall scores */
+  --c1: #F2B134; --c2: #EC7B5C; --c3: #E8503A; --c4: #3FB5A3;
+  --c5: #9382E6; --c6: #72C451; --c7: #4B9FE6; --c8: #E873A9;
+  --s1: #F0705A; --s2: #F29A4A; --s3: #F2C94C; --s4: #9BD65A; --s5: #4FD08A;
+
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1410;
+    --surface: #161F18;
+    --fg: #E7EDE5;
+    --muted: #9AA89C;
+    --line: #2A372D;
+    --accent: #6EC49B;
+    --accent-fg: #0E1410;
+    --amber: #F0A62A;
+    --amber-soft: #3B2D0E;
+    --foam: #F5E9C4;
+    --danger: #F08A8A;
+    --hero-bg: #1C3B2B;
+    --hero-fg: #F5E9C4;
+    --hero-sub: #A9C4B2;
+    --hero-accent: #F0A62A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1410;
+  --surface: #161F18;
+  --fg: #E7EDE5;
+  --muted: #9AA89C;
+  --line: #2A372D;
+  --accent: #6EC49B;
+  --accent-fg: #0E1410;
+  --amber: #F0A62A;
+  --amber-soft: #3B2D0E;
+  --foam: #F5E9C4;
+  --danger: #F08A8A;
+  --hero-bg: #1C3B2B;
+  --hero-fg: #F5E9C4;
+  --hero-sub: #A9C4B2;
+  --hero-accent: #F0A62A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-block: 24px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Header */
+.top {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap;
+  background-color: var(--hero-bg); color: var(--hero-fg);
+  border-top: 8px solid var(--hero-accent); border-radius: 6px;
+  padding: 20px 22px 22px;
+  background-image:
+    radial-gradient(circle at 93% 34%, rgba(255, 255, 255, 0.10) 0 15px, transparent 16px),
+    radial-gradient(circle at 87% 74%, rgba(255, 255, 255, 0.08) 0 9px, transparent 10px),
+    radial-gradient(circle at 97% 80%, rgba(255, 255, 255, 0.10) 0 6px, transparent 7px),
+    radial-gradient(circle at 80% 28%, rgba(255, 255, 255, 0.07) 0 5px, transparent 6px);
+}
+.top h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 48px;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--hero-accent);
+}
+.top p { margin: 8px 0 0; color: var(--hero-fg); opacity: 0.88; max-width: 46ch; }
+.tally { font-family: var(--font-data); font-size: 13px; color: var(--muted); letter-spacing: 0.02em; }
+.top .tally { color: var(--hero-sub); }
+
+/* Layout */
+.grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.judge { display: flex; flex-direction: column; min-width: 0; }
+.judge-body { display: flex; flex-direction: column; }
+.sec { padding: 18px; border-bottom: 1px solid var(--line); }
+.sec:last-child { border-bottom: 0; }
+
+/* Identity */
+.ident { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; }
+.photo-col { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.photo {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 3 / 4; max-width: 100%;
+  border: 1.5px dashed var(--amber); border-radius: 4px; overflow: hidden;
+  background: var(--amber-soft); cursor: pointer; text-align: center; color: var(--muted);
+}
+.photo:hover, .photo.drag { border-color: var(--accent); color: var(--accent); }
+.photo:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.photo.has { border-style: solid; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo .ph { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; font-size: 12px; line-height: 1.25; }
+.photo svg { width: 28px; height: 44px; }
+.linkbtn { background: none; border: 0; padding: 4px 0; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; text-align: left; }
+.linkbtn:hover { color: var(--fg); }
+
+.fields { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
+}
+.field input, .notes textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+  padding: 9px 10px; min-height: 40px;
+}
+.field input::placeholder, .notes textarea::placeholder { color: var(--muted); opacity: 0.8; }
+.field input#beerName { font-weight: 600; font-size: 16px; }
+.status { margin: 12px 0 0; font-size: 13px; color: var(--danger); min-height: 0; }
+.status:empty { display: none; }
+.chip {
+  display: inline-block; font-family: var(--font-data); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; color: var(--muted); vertical-align: middle;
+}
+
+/* Aspects */
+.aspect { display: flex; flex-direction: column; gap: 8px; padding: 14px 18px 16px; border-bottom: 1px solid var(--line); }
+.aspect-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.aspect-name { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+.aspect-name::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--c, var(--amber)); }
+.aspect-hint { color: var(--muted); font-size: 13px; margin-top: 1px; }
+.aspect-val { font-family: var(--font-data); font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.aspect-val.set { color: var(--fg); }
+.nums { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+@media (max-width: 560px) { .nums { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; } }
+.num {
+  min-height: 44px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg);
+  font-family: var(--font-data); font-size: 15px; cursor: pointer; padding: 0;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.12s, border-color 0.12s;
+}
+.num:hover { border-color: var(--c, var(--amber)); }
+.num.under { background: color-mix(in srgb, var(--c, var(--amber)) 30%, var(--bg)); border-color: color-mix(in srgb, var(--c, var(--amber)) 30%, var(--bg)); }
+.num[aria-pressed="true"] { background: var(--c, var(--amber)); border-color: var(--c, var(--amber)); color: var(--amber-ink); font-weight: 600; }
+
+/* Notes + actions */
+.notes { display: flex; flex-direction: column; gap: 6px; }
+.notes textarea { resize: vertical; min-height: 76px; line-height: 1.4; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  min-height: 42px; padding: 0 16px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--surface); cursor: pointer; font-weight: 500;
+}
+.btn:hover { border-color: var(--fg); }
+.btn.primary { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger); }
+.btn.danger.armed { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+
+/* Sticky score bar */
+.scorebar {
+  --score-c: var(--hero-sub);
+  position: sticky; bottom: 0; z-index: 2;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  padding: 12px 18px; background: var(--hero-bg); color: var(--hero-fg);
+  border-top: 4px solid var(--score-c); border-radius: 0 0 5px 5px;
+  box-shadow: 0 -8px 16px -12px rgba(0, 0, 0, 0.45);
+}
+.big { display: flex; align-items: baseline; gap: 4px; }
+.big b { font-family: var(--font-display); font-weight: 700; font-size: 54px; line-height: 0.9; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; min-width: 1.7ch; color: var(--score-c); }
+.big span { font-family: var(--font-data); font-size: 13px; color: var(--hero-sub); }
+.meter-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.verdict { font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.rated { font-size: 12px; color: var(--hero-sub); font-family: var(--font-data); }
+.meter { position: relative; height: 12px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(0, 0, 0, 0.28); border-radius: 2px; overflow: hidden; }
+.meter i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--score-c); transition: width 0.25s ease; }
+.meter i::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 5px; background: var(--foam); }
+.meter i[style*="width: 0%"]::after { display: none; }
+@media (max-width: 460px) {
+  .scorebar { grid-template-columns: auto minmax(0, 1fr); }
+  .scorebar .btn { grid-column: 1 / -1; width: 100%; }
+}
+
+/* Flight */
+.flight { padding: 0; overflow: hidden; }
+.flight-head { padding: 16px 18px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--line); background: var(--amber-soft); }
+.flight-head h2 { margin: 0; font-family: var(--font-display); font-size: 24px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; }
+.flight ol { list-style: none; margin: 0; padding: 0; }
+.flight li + li { border-top: 1px solid var(--line); }
+.row {
+  width: 100%; display: grid; grid-template-columns: 26px 44px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 10px 14px 10px 12px; border: 0; background: none; text-align: left; cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.row:hover { background: var(--bg); }
+.row[aria-current="true"] { border-left-color: var(--accent); background: var(--bg); }
+.rank { font-family: var(--font-data); font-size: 13px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.thumb { width: 44px; height: 56px; border-radius: 3px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb svg { width: 14px; height: 24px; }
+.rname { font-weight: 600; overflow-wrap: anywhere; line-height: 1.25; }
+.rsub { font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.rank.first { justify-self: end; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--amber); color: var(--amber-ink); font-weight: 600; }
+.rscore { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; padding: 5px 9px; border-radius: 4px; background: var(--pill, transparent); color: var(--amber-ink); min-width: 3ch; text-align: center; }
+.rscore.none { color: var(--muted); }
+.empty { padding: 22px 18px 26px; color: var(--muted); }
+.empty strong { display: block; color: var(--fg); margin-bottom: 4px; }
+
+/* Backup */
+.backup { border-top: 1px solid var(--line); padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+.backup p { margin: 0; font-size: 13px; color: var(--muted); }
+.backup .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.backup .backup-msg { color: var(--fg); }
+.backup .backup-msg:empty { display: none; }
+.backup textarea {
+  width: 100%; min-height: 96px; resize: vertical; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 8px; font-family: var(--font-data); font-size: 12px; line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter i, .num { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Beer Judge</h1>
+      <p>Score each beer on eight aspects by tapping a number. The average out of 10 is its overall score.</p>
+    </div>
+    <div class="tally" id="tally" aria-live="polite"></div>
+  </header>
+
+  <div class="grid">
+    <section class="card judge" id="judge" aria-label="Judge a beer">
+      <div class="judge-body">
+        <div class="sec">
+          <div class="ident">
+            <div class="photo-col">
+              <label class="photo" id="photoBox" for="photoInput">
+                <input class="sr" type="file" id="photoInput" accept="image/*">
+                <span id="photoInner"></span>
+              </label>
+              <button type="button" class="linkbtn" id="photoRemove" hidden>Remove photo</button>
+            </div>
+            <div class="fields">
+              <div class="field">
+                <label for="beerName">Beer</label>
+                <input id="beerName" type="text" placeholder="Name of the beer" autocomplete="off" maxlength="80">
+              </div>
+              <div class="field">
+                <label for="beerStyle">Style or brewery</label>
+                <input id="beerStyle" type="text" placeholder="Pale ale, stout, lager…" autocomplete="off" maxlength="80">
+              </div>
+            </div>
+          </div>
+          <p class="status" id="status" role="status"></p>
+        </div>
+
+        <div id="aspects"></div>
+
+        <div class="sec notes">
+          <label class="eyebrow" for="beerNotes">Tasting notes</label>
+          <textarea id="beerNotes" placeholder="Anything worth remembering about this one"></textarea>
+        </div>
+
+        <div class="sec actions">
+          <button type="button" class="btn primary" id="newBeer">Judge another beer</button>
+          <button type="button" class="btn danger" id="deleteBeer">Delete this beer</button>
+        </div>
+      </div>
+
+      <div class="scorebar" aria-live="polite">
+        <div class="big"><b id="scoreNum">–</b><span>/ 10</span></div>
+        <div class="meter-wrap">
+          <div class="verdict" id="verdict">Tap a number to start</div>
+          <div class="meter" aria-hidden="true"><i id="meterFill" style="width: 0%"></i></div>
+          <div class="rated" id="ratedCount">0 of 8 aspects rated</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card flight" aria-labelledby="flightTitle">
+      <div class="flight-head">
+        <h2 id="flightTitle">Your flight</h2>
+        <span class="tally">best first</span>
+      </div>
+      <div id="flightBody"></div>
+      <div class="backup">
+        <div class="eyebrow">Backup</div>
+        <p>Save your beers to a file, or load a backup to restore them. The example beers are not included.</p>
+        <div class="actions">
+          <button type="button" class="btn" id="exportBtn">Export backup</button>
+          <button type="button" class="btn" id="importBtn">Import backup</button>
+          <input class="sr" type="file" id="importInput" accept=".json,application/json" tabindex="-1">
+        </div>
+        <p class="backup-msg" id="backupMsg" role="status"></p>
+        <textarea id="exportText" readonly hidden aria-label="Backup text to copy"></textarea>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY = "beerjudge.v1";
+  var ASPECTS = [
+    { key: "appearance", label: "Appearance", hint: "Colour, clarity and head" },
+    { key: "aroma", label: "Aroma", hint: "What you smell before the first sip" },
+    { key: "taste", label: "Taste", hint: "Flavour, balance and depth" },
+    { key: "mouthfeel", label: "Mouthfeel", hint: "Body, carbonation and texture" },
+    { key: "finish", label: "Finish", hint: "Aftertaste and how long it lingers" },
+    { key: "drinkability", label: "Drinkability", hint: "Would you want a second one" },
+    { key: "quality", label: "Quality", hint: "Consistency and craft" },
+    { key: "value", label: "Value", hint: "Worth what you paid" }
+  ];
+
+  var SVG_BOTTLE = '<svg viewBox="0 0 28 44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M11 2h6v9c0 3 4 5 4 10v19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V21c0-5 4-7 4-10V2z"/><path d="M7 27h14"/></svg>';
+
+  /* ---------- state ---------- */
+  var state = { beers: [], currentId: null };
+  var storageOk = true;
+
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+  function blank() { return { id: uid(), name: "", style: "", photo: "", scores: {}, notes: "", example: false }; }
+  function isEmpty(b) { return !b.name.trim() && !b.style.trim() && !b.photo && !Object.keys(b.scores).length && !b.notes.trim(); }
+  function seed() {
+    function ex(name, style, scores) { return { id: uid(), name: name, style: style, photo: "", scores: scores, notes: "", example: true }; }
+    return [
+      ex("Sample Pale Ale", "Pale ale", { appearance: 8, aroma: 7, taste: 8, mouthfeel: 7, finish: 7, drinkability: 9, quality: 8, value: 7 }),
+      ex("Sample Stout", "Milk stout", { appearance: 9, aroma: 8, taste: 9, mouthfeel: 9, finish: 8, drinkability: 6, quality: 8, value: 6 }),
+      ex("Sample Lager", "Pale lager", { appearance: 5, aroma: 4, taste: 5, mouthfeel: 5, finish: 4, drinkability: 7, quality: 5, value: 8 })
+    ];
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var data = JSON.parse(raw);
+        if (data && Array.isArray(data.beers)) { state.beers = data.beers; state.currentId = data.currentId; }
+      } else { state.beers = seed(); }
+    } catch (e) { state.beers = seed(); }
+    if (!state.beers.some(function (b) { return b.id === state.currentId; })) {
+      var nb = blank(); state.beers.push(nb); state.currentId = nb.id;
+    }
+  }
+  function save() {
+    state.beers = state.beers.filter(function (b) { return b.id === state.currentId || !isEmpty(b); });
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      if (!storageOk) { storageOk = true; setStatus(""); }
+    } catch (e) {
+      storageOk = false;
+      setStatus("This browser could not save your beers. They will be lost when you close the page.");
+    }
+  }
+  function current() { return state.beers.filter(function (b) { return b.id === state.currentId; })[0]; }
+
+  /* ---------- scoring ---------- */
+  function average(b) {
+    var vals = ASPECTS.map(function (a) { return b.scores[a.key]; }).filter(function (v) { return typeof v === "number"; });
+    if (!vals.length) return null;
+    return vals.reduce(function (s, v) { return s + v; }, 0) / vals.length;
+  }
+  function verdictFor(avg) {
+    if (avg === null) return "Tap a number to start";
+    if (avg < 3) return "Drain pour";
+    if (avg < 5) return "Not for me";
+    if (avg < 6.5) return "Decent";
+    if (avg < 8) return "A good pour";
+    if (avg < 9) return "Excellent";
+    return "Top shelf";
+  }
+  function bandVar(avg) {
+    var i = avg < 3 ? 1 : avg < 5 ? 2 : avg < 6.5 ? 3 : avg < 8 ? 4 : 5;
+    return "var(--s" + i + ")";
+  }
+  function ratedCount(b) { return ASPECTS.filter(function (a) { return typeof b.scores[a.key] === "number"; }).length; }
+
+  /* ---------- dom helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "text") el.textContent = attrs[k]; else el.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) { if (arguments[i]) el.appendChild(arguments[i]); }
+    return el;
+  }
+  function setStatus(msg) { $("status").textContent = msg; }
+
+  /* ---------- aspect rows (built once) ---------- */
+  var rowEls = {};
+  function buildAspects() {
+    var host = $("aspects");
+    ASPECTS.forEach(function (a, ai) {
+      var val = h("span", { "class": "aspect-val", text: "–" });
+      var head = h("div", { "class": "aspect-head" },
+        h("div", null, h("div", { "class": "aspect-name", text: a.label }), h("div", { "class": "aspect-hint", text: a.hint })),
+        val);
+      var nums = h("div", { "class": "nums", role: "group", "aria-label": a.label + " score out of 10" });
+      var btns = [];
+      for (var n = 1; n <= 10; n++) {
+        (function (n) {
+          var b = h("button", { type: "button", "class": "num", "aria-pressed": "false", "aria-label": a.label + " " + n, text: String(n) });
+          b.addEventListener("click", function () { setScore(a.key, n); });
+          btns.push(b); nums.appendChild(b);
+        })(n);
+      }
+      var row = h("div", { "class": "aspect" }, head, nums);
+      row.style.setProperty("--c", "var(--c" + (ai + 1) + ")");
+      host.appendChild(row);
+      rowEls[a.key] = { val: val, btns: btns };
+    });
+  }
+  function paintRow(key, value) {
+    var r = rowEls[key];
+    r.btns.forEach(function (b, i) {
+      var n = i + 1;
+      b.setAttribute("aria-pressed", String(value === n));
+      b.classList.toggle("under", typeof value === "number" && n < value);
+    });
+    r.val.textContent = typeof value === "number" ? value + " / 10" : "–";
+    r.val.classList.toggle("set", typeof value === "number");
+  }
+
+  function setScore(key, n) {
+    var b = current();
+    if (b.scores[key] === n) delete b.scores[key]; else b.scores[key] = n;
+    paintRow(key, b.scores[key]);
+    renderScore(); renderFlight(); save();
+  }
+
+  /* ---------- renderers ---------- */
+  function renderPhoto() {
+    var b = current(), inner = $("photoInner");
+    inner.textContent = "";
+    if (b.photo) {
+      inner.appendChild(h("img", { src: b.photo, alt: b.name ? "Photo of " + b.name : "Photo of the beer" }));
+    } else {
+      var ph = h("span", { "class": "ph" });
+      ph.innerHTML = SVG_BOTTLE;
+      ph.appendChild(h("span", { text: "Add a photo of the beer" }));
+      inner.appendChild(ph);
+    }
+    $("photoBox").classList.toggle("has", !!b.photo);
+    $("photoRemove").hidden = !b.photo;
+  }
+  function renderScore() {
+    var b = current(), avg = average(b), cnt = ratedCount(b);
+    $("scoreNum").textContent = avg === null ? "–" : avg.toFixed(1);
+    $("verdict").textContent = verdictFor(avg);
+    $("ratedCount").textContent = cnt + " of " + ASPECTS.length + " aspects rated";
+    $("meterFill").style.width = (avg === null ? 0 : avg * 10) + "%";
+    var bar = document.querySelector(".scorebar");
+    if (avg === null) bar.style.removeProperty("--score-c"); else bar.style.setProperty("--score-c", bandVar(avg));
+  }
+  function renderFlight() {
+    var host = $("flightBody");
+    host.textContent = "";
+    var list = state.beers.filter(function (b) { return !isEmpty(b); });
+    var judged = list.filter(function (b) { return average(b) !== null; }).length;
+    $("tally").textContent = judged + (judged === 1 ? " beer judged" : " beers judged");
+    if (!list.length) {
+      host.appendChild(h("div", { "class": "empty" }, h("strong", { text: "Nothing judged yet" }), h("span", { text: "Score a beer and it appears here, ranked against the others." })));
+      return;
+    }
+    list.sort(function (a, b) {
+      var x = average(a), y = average(b);
+      if (x === null && y === null) return (a.name || "").localeCompare(b.name || "");
+      if (x === null) return 1;
+      if (y === null) return -1;
+      if (y !== x) return y - x;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+    var ol = h("ol");
+    var rank = 0;
+    list.forEach(function (b) {
+      var avg = average(b);
+      if (avg !== null) rank++;
+      var thumb = h("span", { "class": "thumb" });
+      if (b.photo) thumb.appendChild(h("img", { src: b.photo, alt: "" })); else thumb.innerHTML = SVG_BOTTLE;
+      var nameEl = h("div", { "class": "rname", text: b.name.trim() || "Untitled beer" });
+      if (b.example) { nameEl.appendChild(document.createTextNode(" ")); nameEl.appendChild(h("span", { "class": "chip", text: "Example" })); }
+      var info = h("span", null, nameEl);
+      var sub = b.style.trim();
+      if (sub) info.appendChild(h("div", { "class": "rsub", text: sub }));
+      var rankEl = h("span", { "class": "rank" + (avg !== null && rank === 1 ? " first" : ""), text: avg === null ? "–" : String(rank) });
+      var scoreEl = h("span", { "class": "rscore" + (avg === null ? " none" : ""), text: avg === null ? "–" : avg.toFixed(1) });
+      if (avg !== null) scoreEl.style.setProperty("--pill", bandVar(avg));
+      var btn = h("button", { type: "button", "class": "row" }, rankEl, thumb, info, scoreEl);
+      if (b.id === state.currentId) btn.setAttribute("aria-current", "true");
+      btn.addEventListener("click", function () { select(b.id, true); });
+      ol.appendChild(h("li", null, btn));
+    });
+    host.appendChild(ol);
+  }
+  function syncForm() {
+    var b = current();
+    $("beerName").value = b.name;
+    $("beerStyle").value = b.style;
+    $("beerNotes").value = b.notes;
+    ASPECTS.forEach(function (a) { paintRow(a.key, b.scores[a.key]); });
+    renderPhoto(); renderScore(); disarm();
+  }
+  function select(id, scroll) {
+    state.currentId = id;
+    save(); setStatus(""); storageOk = true;
+    syncForm(); renderFlight();
+    if (scroll) { var j = $("judge"); if (j.getBoundingClientRect().top < 0) j.scrollIntoView({ block: "start" }); }
+  }
+
+  /* ---------- photo ---------- */
+  function readImage(file) {
+    if (!file) return;
+    if (file.type && file.type.indexOf("image/") !== 0) { setStatus("That file is not an image. Choose a JPG or PNG."); return; }
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var max = 720, scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        var w = Math.max(1, Math.round(img.naturalWidth * scale)), hgt = Math.max(1, Math.round(img.naturalHeight * scale));
+        var c = document.createElement("canvas"); c.width = w; c.height = hgt;
+        c.getContext("2d").drawImage(img, 0, 0, w, hgt);
+        var b = current(); b.photo = c.toDataURL("image/jpeg", 0.82);
+        setStatus(""); renderPhoto(); renderFlight(); save();
+      } catch (e) { setStatus("Could not read that image. Try a different photo."); }
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); setStatus("Could not read that image. Try a JPG or PNG."); };
+    img.src = url;
+  }
+
+  /* ---------- actions ---------- */
+  var armTimer = null;
+  function disarm() {
+    clearTimeout(armTimer);
+    var d = $("deleteBeer"); d.classList.remove("armed"); d.textContent = "Delete this beer";
+  }
+  function newBeer() {
+    var b = current();
+    if (isEmpty(b)) { $("beerName").focus(); return; }
+    var nb = blank(); state.beers.push(nb);
+    select(nb.id, true);
+    $("beerName").focus({ preventScroll: false });
+  }
+  function deleteBeer() {
+    var d = $("deleteBeer");
+    if (!d.classList.contains("armed")) {
+      d.classList.add("armed"); d.textContent = "Tap again to delete";
+      clearTimeout(armTimer); armTimer = setTimeout(disarm, 3500);
+      return;
+    }
+    var id = state.currentId;
+    state.beers = state.beers.filter(function (b) { return b.id !== id; });
+    var nb = blank(); state.beers.push(nb);
+    select(nb.id, false);
+  }
+
+  /* ---------- backup ---------- */
+  function backupMsg(t) { $("backupMsg").textContent = t; }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function localDate() {
+    var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  function str(v, n) { return typeof v === "string" ? v.slice(0, n) : ""; }
+  function clean(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var b = blank();
+    if (typeof raw.id === "string" && /^[A-Za-z0-9]{1,40}$/.test(raw.id)) b.id = raw.id;
+    b.name = str(raw.name, 80);
+    b.style = str(raw.style, 80);
+    b.notes = str(raw.notes, 5000);
+    if (typeof raw.photo === "string" && raw.photo.length < 3000000 && /^data:image\/(jpeg|png|webp);base64,/.test(raw.photo)) b.photo = raw.photo;
+    ASPECTS.forEach(function (a) {
+      var v = raw.scores && raw.scores[a.key];
+      if (typeof v === "number" && v % 1 === 0 && v >= 1 && v <= 10) b.scores[a.key] = v;
+    });
+    return isEmpty(b) ? null : b;
+  }
+  function showBackupText(json) {
+    var ta = $("exportText");
+    ta.value = json; ta.hidden = false; ta.focus(); ta.select();
+    var manual = "Saving a file is not available here. Copy the text below and save it in a text file ending in .json.";
+    try {
+      navigator.clipboard.writeText(json).then(
+        function () { backupMsg("Saving a file is not available here, so the backup text was copied. Paste it into a text file and save it as .json."); },
+        function () { backupMsg(manual); });
+    } catch (e) { backupMsg(manual); }
+  }
+  function exportBackup() {
+    var beers = state.beers.filter(function (b) { return !b.example && !isEmpty(b); });
+    $("exportText").hidden = true;
+    if (!beers.length) { backupMsg("Nothing to back up yet. Judge a beer first."); return; }
+    var json = JSON.stringify({ app: "beer-judge", version: 1, exportedAt: new Date().toISOString(), beers: beers }, null, 2);
+    var name = "beer-judge-backup-" + localDate() + ".json";
+    var getter;
+    try { getter = Promise.resolve(window.claude && window.claude.use ? window.claude.use("downloads") : null); }
+    catch (e) { getter = Promise.resolve(null); }
+    getter.catch(function () { return null; }).then(function (d) {
+      if (!d) {
+        try {
+          var url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+          var a = document.createElement("a");
+          a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+          backupMsg("Backup downloaded with " + plural(beers.length, "beer", "beers") + ". Check your Downloads or Files app.");
+        } catch (e) { showBackupText(json); }
+        return;
+      }
+      return d.save({ filename: name, data: json }).then(
+        function () { backupMsg("Backup saved with " + plural(beers.length, "beer", "beers") + "."); },
+        function (err) {
+          if (err && err.code === "declined") { backupMsg("Export cancelled."); return; }
+          showBackupText(json);
+        });
+    });
+  }
+  function importBackup(file) {
+    if (!file) return;
+    if (file.size > 40000000) { backupMsg("That file is too large to be a Beer Judge backup."); return; }
+    var rd = new FileReader();
+    rd.onerror = function () { backupMsg("Could not read that file."); };
+    rd.onload = function () {
+      var data;
+      try { data = JSON.parse(String(rd.result)); } catch (e) { backupMsg("That file is not a Beer Judge backup."); return; }
+      var list = Array.isArray(data) ? data : (data && Array.isArray(data.beers) ? data.beers : null);
+      if (!list) { backupMsg("That file is not a Beer Judge backup."); return; }
+      var added = 0, updated = 0;
+      list.forEach(function (raw) {
+        var b = clean(raw);
+        if (!b) return;
+        var idx = -1;
+        state.beers.forEach(function (x, i) { if (x.id === b.id) idx = i; });
+        if (idx >= 0) { state.beers[idx] = b; updated++; } else { state.beers.push(b); added++; }
+      });
+      if (!added && !updated) { backupMsg("No beers found in that file."); return; }
+      save(); syncForm(); renderFlight();
+      var parts = [];
+      if (added) parts.push(plural(added, "new beer", "new beers"));
+      if (updated) parts.push(plural(updated, "updated", "updated"));
+      backupMsg("Imported " + parts.join(" and ") + ".");
+    };
+    rd.readAsText(file);
+  }
+
+  /* ---------- wire up ---------- */
+  function bind() {
+    $("beerName").addEventListener("input", function (e) { current().name = e.target.value; renderFlight(); save(); });
+    $("beerStyle").addEventListener("input", function (e) { current().style = e.target.value; renderFlight(); save(); });
+    $("beerNotes").addEventListener("input", function (e) { current().notes = e.target.value; save(); });
+    $("photoInput").addEventListener("change", function (e) { readImage(e.target.files && e.target.files[0]); e.target.value = ""; });
+    $("photoRemove").addEventListener("click", function () { current().photo = ""; renderPhoto(); renderFlight(); save(); });
+    var box = $("photoBox");
+    ["dragenter", "dragover"].forEach(function (t) { box.addEventListener(t, function (e) { e.preventDefault(); box.classList.add("drag"); }); });
+    ["dragleave", "drop"].forEach(function (t) { box.addEventListener(t, function (e) { e.preventDefault(); box.classList.remove("drag"); }); });
+    box.addEventListener("drop", function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; readImage(f); });
+    $("newBeer").addEventListener("click", newBeer);
+    $("deleteBeer").addEventListener("click", deleteBeer);
+    $("exportBtn").addEventListener("click", exportBackup);
+    $("importBtn").addEventListener("click", function () { $("importInput").click(); });
+    $("importInput").addEventListener("change", function (e) { importBackup(e.target.files && e.target.files[0]); e.target.value = ""; });
+  }
+
+  buildAspects();
+  load();
+  bind();
+  syncForm();
+  renderFlight();
+  save();
+})();
+</script>
+</body>
+</html>
