@@ -260,6 +260,46 @@ button, input, textarea { font: inherit; color: inherit; }
 .empty { padding: 22px 18px 26px; color: var(--muted); }
 .empty strong { display: block; color: var(--fg); margin-bottom: 4px; }
 
+/* Game */
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--line); }
+.btn[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); font-weight: 600; }
+.game { overflow: hidden; }
+.game-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 14px 18px; background: var(--amber-soft); border-bottom: 1px solid var(--line); }
+.game-head h2 { margin: 0; font-family: var(--font-display); font-size: 24px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; }
+.board { display: flex; gap: 6px; flex-wrap: wrap; }
+.pchip { display: flex; align-items: center; gap: 7px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); font-size: 13px; }
+.pchip i, .rdot { width: 9px; height: 9px; border-radius: 50%; background: var(--pc, var(--amber)); flex: none; }
+.pchip b { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.game-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.gnote { margin: 0; color: var(--muted); max-width: 60ch; }
+.names { display: flex; flex-direction: column; gap: 12px; max-width: 440px; }
+.name-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; }
+.me { display: flex; align-items: center; gap: 6px; min-height: 40px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.me input { accent-color: var(--accent); width: 18px; height: 18px; }
+.guess-val { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+.mine { display: flex; gap: 32px; flex-wrap: wrap; }
+.mine > div { display: flex; flex-direction: column; gap: 2px; }
+.mine b { font-family: var(--font-display); font-weight: 700; font-size: 56px; line-height: 0.95; font-variant-numeric: tabular-nums; }
+.cmp { display: flex; flex-direction: column; gap: 8px; max-width: 440px; }
+.cmp-head, .cmp-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px 84px; gap: 10px; align-items: center; }
+.cmp-head { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.cmp-row .nm { display: flex; align-items: center; gap: 8px; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.cmp-row input { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 9px 6px; min-height: 42px; font-family: var(--font-data); text-align: center; }
+.cmp-row input::placeholder { color: var(--muted); opacity: 0.7; }
+.reveal-score { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.reveal-score b { font-family: var(--font-display); font-weight: 700; font-size: 60px; line-height: 0.95; padding: 6px 14px; border-radius: 4px; background: var(--pill, var(--amber)); color: var(--amber-ink); font-variant-numeric: tabular-nums; }
+.reveal-score span { color: var(--muted); font-family: var(--font-data); font-size: 13px; }
+.results { display: flex; flex-direction: column; }
+.rrow { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.rrow .nm { font-weight: 600; overflow-wrap: anywhere; }
+.rrow .meta { font-family: var(--font-data); font-size: 12px; color: var(--muted); margin-top: 2px; }
+.tag { font-family: var(--font-data); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 3px; white-space: nowrap; }
+.tag.win { background: var(--s5); color: var(--amber-ink); font-weight: 600; }
+.tag.drink { background: var(--amber); color: var(--amber-ink); font-weight: 600; }
+.tag.pts { background: var(--bg); border: 1px solid var(--line); color: var(--fg); }
+.final-title { font-family: var(--font-display); font-weight: 700; font-size: 36px; line-height: 1.05; letter-spacing: 0.03em; text-transform: uppercase; overflow-wrap: anywhere; }
+
 /* Share image */
 .msg { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--danger); }
 .msg:empty { display: none; }
@@ -301,6 +341,14 @@ button, input, textarea { font: inherit; color: inherit; }
     </div>
     <div class="tally" id="tally" aria-live="polite"></div>
   </header>
+
+  <section class="card game" id="game" aria-labelledby="gameTitle">
+    <div class="game-head">
+      <h2 id="gameTitle">Guess the score</h2>
+      <div class="board" id="gameBoard" aria-live="polite"></div>
+    </div>
+    <div class="game-body" id="gameBody"></div>
+  </section>
 
   <div class="grid">
     <section class="card judge" id="judge" aria-label="Judge a beer">
@@ -350,6 +398,7 @@ button, input, textarea { font: inherit; color: inherit; }
           <div class="meter" aria-hidden="true"><i id="meterFill" style="width: 0%"></i></div>
           <div class="rated" id="ratedCount">0 of 8 aspects rated</div>
         </div>
+        <button type="button" class="btn primary" id="revealBtn" hidden>Compare scores</button>
       </div>
     </section>
 
@@ -540,6 +589,7 @@ button, input, textarea { font: inherit; color: inherit; }
     $("meterFill").style.width = (avg === null ? 0 : avg * 10) + "%";
     var bar = document.querySelector(".scorebar");
     if (avg === null) bar.style.removeProperty("--score-c"); else bar.style.setProperty("--score-c", bandVar(avg));
+    if (game.phase === "judge") renderGame();
   }
   function renderFlight() {
     var host = $("flightBody");
@@ -597,24 +647,56 @@ button, input, textarea { font: inherit; color: inherit; }
   }
 
   /* ---------- photo ---------- */
+  function decodeImage(file) {
+    // Try several decoders in turn: one browser may fail on a very large photo or a blob link where another succeeds.
+    function viaBitmap(opts) {
+      return function () {
+        if (!window.createImageBitmap) return Promise.reject(new Error("no bitmap"));
+        return createImageBitmap(file, opts).then(function (bm) { return { src: bm, w: bm.width, h: bm.height }; });
+      };
+    }
+    function viaImg(getSrc, cleanup) {
+      return function () {
+        return new Promise(function (res, rej) {
+          Promise.resolve(getSrc()).then(function (src) {
+            var im = new Image();
+            im.onload = function () { if (cleanup) cleanup(src); res({ src: im, w: im.naturalWidth, h: im.naturalHeight }); };
+            im.onerror = function () { if (cleanup) cleanup(src); rej(new Error("img")); };
+            im.src = src;
+          }, rej);
+        });
+      };
+    }
+    var blobSrc = function () { return URL.createObjectURL(file); };
+    var dataSrc = function () {
+      return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = rej; r.readAsDataURL(file); });
+    };
+    var tries = [
+      viaBitmap({ resizeWidth: 1280, resizeQuality: "medium" }),
+      viaImg(blobSrc, function (u) { URL.revokeObjectURL(u); }),
+      viaBitmap(undefined),
+      viaImg(dataSrc, null)
+    ];
+    return tries.reduce(function (p, t) { return p.catch(t); }, Promise.reject(new Error("start")));
+  }
   function readImage(file) {
     if (!file) return;
-    if (file.type && file.type.indexOf("image/") !== 0) { setStatus("That file is not an image. Choose a JPG or PNG."); return; }
-    var url = URL.createObjectURL(file);
-    var img = new Image();
-    img.onload = function () {
-      try {
-        var max = 720, scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-        var w = Math.max(1, Math.round(img.naturalWidth * scale)), hgt = Math.max(1, Math.round(img.naturalHeight * scale));
-        var c = document.createElement("canvas"); c.width = w; c.height = hgt;
-        c.getContext("2d").drawImage(img, 0, 0, w, hgt);
-        var b = current(); b.photo = c.toDataURL("image/jpeg", 0.82);
-        setStatus(""); renderPhoto(); renderFlight(); save();
-      } catch (e) { setStatus("Could not read that image. Try a different photo."); }
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = function () { URL.revokeObjectURL(url); setStatus("Could not read that image. Try a JPG or PNG."); };
-    img.src = url;
+    var looksImage = /^image\//.test(file.type || "") || /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(file.name || "");
+    if (file.type && !looksImage) { setStatus("That file is not an image. Choose a JPG or PNG."); return; }
+    var target = current();
+    setStatus("Loading photo…");
+    decodeImage(file).then(function (d) {
+      var max = 720, scale = Math.min(1, max / Math.max(d.w, d.h));
+      var w = Math.max(1, Math.round(d.w * scale)), hgt = Math.max(1, Math.round(d.h * scale));
+      var c = document.createElement("canvas"); c.width = w; c.height = hgt;
+      var ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, hgt); ctx.drawImage(d.src, 0, 0, w, hgt);
+      if (d.src.close) d.src.close();
+      target.photo = c.toDataURL("image/jpeg", 0.82);
+      setStatus(""); renderPhoto(); renderFlight(); save();
+    }).catch(function () {
+      var kb = Math.max(1, Math.round(file.size / 1024));
+      setStatus("Could not read that photo (" + (file.type || "unknown type") + ", " + (kb > 1024 ? (kb / 1024).toFixed(1) + " MB" : kb + " KB") + "). If it is a HEIC photo, choose a JPG or PNG instead.");
+    });
   }
 
   /* ---------- actions ---------- */
@@ -729,6 +811,270 @@ button, input, textarea { font: inherit; color: inherit; }
       backupMsg("Imported " + parts.join(" and ") + ".");
     };
     rd.readAsText(file);
+  }
+
+  /* ---------- game: guess the group average (each player on their own phone) ---------- */
+  var GKEY = "beerjudge.game.v2";
+  var PHASES = ["off", "setup", "guess", "judge", "compare", "final"];
+  var game = { phase: "off", names: ["", ""], me: 0, players: [], round: 0, beerId: null, pick: null, half: false, myGuess: null, others: {}, committed: false };
+
+  function isNum(v) { return typeof v === "number" && isFinite(v); }
+  function gameSave() { try { localStorage.setItem(GKEY, JSON.stringify(game)); } catch (e) {} }
+  function gameLoad() {
+    try {
+      var g = JSON.parse(localStorage.getItem(GKEY) || "null");
+      if (!g || PHASES.indexOf(g.phase) < 0 || !Array.isArray(g.players)) return;
+      game.players = g.players.slice(0, 4).map(function (p) {
+        return { name: str(p && p.name, 20) || "Player", points: p && isNum(p.points) ? p.points : 0 };
+      });
+      game.names = Array.isArray(g.names) ? g.names.slice(0, 4).map(function (n) { return str(n, 20); }) : [];
+      while (game.names.length < 2) game.names.push("");
+      game.me = isNum(g.me) && g.me >= 0 && g.me < Math.max(game.players.length, 1) ? g.me : 0;
+      game.round = isNum(g.round) ? g.round : 0;
+      game.beerId = typeof g.beerId === "string" ? g.beerId : null;
+      game.myGuess = isNum(g.myGuess) ? g.myGuess : null;
+      game.others = {};
+      if (g.others && typeof g.others === "object") Object.keys(g.others).forEach(function (k) {
+        var o = g.others[k]; if (o && typeof o === "object") game.others[k] = { score: str(o.score, 6), guess: str(o.guess, 6) };
+      });
+      game.committed = !!g.committed;
+      game.pick = null; game.half = false;
+      game.phase = g.phase;
+      if (["guess", "judge", "compare"].indexOf(game.phase) >= 0 && game.players.length < 2) game.phase = "off";
+      if ((game.phase === "judge" || game.phase === "compare") && game.myGuess === null) game.phase = "guess";
+    } catch (e) {}
+  }
+  function beerById(id) { return state.beers.filter(function (b) { return b.id === id; })[0] || null; }
+  function pcolor(i) { return "var(--c" + (i + 1) + ")"; }
+  function gbtn(label, cls, fn, disabled) {
+    var b = h("button", { type: "button", "class": "btn" + (cls ? " " + cls : ""), text: label });
+    if (disabled) b.disabled = true;
+    b.addEventListener("click", fn);
+    return b;
+  }
+  function gscroll(id) { var el = $(id); if (el) el.scrollIntoView({ block: "start" }); }
+  function parseNum(v) {
+    var n = parseFloat(String(v).replace(",", "."));
+    return isFinite(n) && n >= 1 && n <= 10 ? n : null;
+  }
+
+  function openSetup() {
+    if (game.players.length >= 2) game.names = game.players.map(function (p) { return p.name; });
+    while (game.names.length < 2) game.names.push("");
+    game.phase = "setup"; gameSave(); renderGame();
+  }
+  function readSetup() {
+    game.names = game.names.map(function (n, i) { var el = $("pname" + i); return el ? el.value : n; });
+    for (var i = 0; i < game.names.length; i++) { var r = $("pme" + i); if (r && r.checked) game.me = i; }
+    if (game.me >= game.names.length) game.me = 0;
+  }
+  function startGame() {
+    readSetup();
+    game.players = game.names.map(function (n, i) { return { name: n.trim() || "Player " + (i + 1), points: 0 }; });
+    game.round = 0;
+    startRound();
+  }
+  function startRound() {
+    var b = current();
+    if (!isEmpty(b)) { var nb = blank(); state.beers.push(nb); select(nb.id, false); }
+    game.beerId = state.currentId;
+    game.round++; game.pick = null; game.half = false; game.myGuess = null; game.others = {}; game.committed = false;
+    game.phase = "guess"; gameSave(); renderGame(); gscroll("game");
+  }
+  function pickedGuess() { return isNum(game.pick) ? game.pick + (game.half && game.pick < 10 ? 0.5 : 0) : null; }
+  function lockGuess() {
+    var g = pickedGuess(); if (g === null) return;
+    game.myGuess = g; game.pick = null; game.half = false;
+    game.phase = "judge"; gameSave(); renderGame(); gscroll("judge");
+  }
+  function goCompare() {
+    if (game.phase !== "judge") return;
+    var beer = beerById(game.beerId);
+    if (!beer || average(beer) === null) return;
+    game.phase = "compare"; gameSave(); renderGame(); gscroll("game");
+  }
+  function backToJudging() { game.phase = "judge"; gameSave(); renderGame(); gscroll("judge"); }
+
+  function computeResult() {
+    var beer = beerById(game.beerId), myAvg = beer ? average(beer) : null;
+    if (myAvg === null || game.myGuess === null) return null;
+    var rows = [];
+    for (var i = 0; i < game.players.length; i++) {
+      if (i === game.me) { rows.push({ i: i, score: Math.round(myAvg * 10) / 10, guess: game.myGuess }); continue; }
+      var o = game.others[i] || {}, sc = parseNum(o.score), gu = parseNum(o.guess);
+      if (sc === null || gu === null) return null;
+      rows.push({ i: i, score: sc, guess: gu });
+    }
+    var avg = rows.reduce(function (a, r) { return a + r.score; }, 0) / rows.length;
+    rows.forEach(function (r) { r.diff = Math.abs(r.guess - avg); r.win = false; r.drink = false; });
+    var diffs = rows.map(function (r) { return r.diff; });
+    var min = Math.min.apply(null, diffs), max = Math.max.apply(null, diffs), bullseye = min <= 0.5;
+    rows.forEach(function (r) {
+      if (r.diff - min < 0.0001) r.win = true;
+      else if (max - min > 0.0001 && max - r.diff < 0.0001) r.drink = true;
+    });
+    return { avg: avg, bullseye: bullseye, rows: rows };
+  }
+  function commitRound() {
+    if (game.committed) return;
+    var res = computeResult(); if (!res) return;
+    res.rows.forEach(function (r) { if (r.win && game.players[r.i]) game.players[r.i].points += res.bullseye ? 2 : 1; });
+    game.committed = true; gameSave();
+  }
+  function nextBeer() { commitRound(); startRound(); }
+  function finishGame() { if (game.phase === "compare") commitRound(); game.phase = "final"; gameSave(); renderGame(); gscroll("game"); }
+  function playAgain() { game.players.forEach(function (p) { p.points = 0; }); game.round = 0; startRound(); }
+  function closeGame() { game.phase = "off"; gameSave(); renderGame(); }
+
+  function renderBoard() {
+    var host = $("gameBoard"); host.textContent = "";
+    if (["guess", "judge", "compare", "final"].indexOf(game.phase) < 0) return;
+    game.players.forEach(function (p, i) {
+      var chip = h("span", { "class": "pchip" }, h("i"), h("span", { text: p.name + (i === game.me ? " (you)" : "") }), h("b", { text: String(p.points) }));
+      chip.style.setProperty("--pc", pcolor(i));
+      host.appendChild(chip);
+    });
+  }
+  function resultRow(i, name, meta, tagText, tagClass) {
+    var dot = h("i", { "class": "rdot" }); dot.style.setProperty("--pc", pcolor(i));
+    var info = h("div", null, h("div", { "class": "nm", text: name }), h("div", { "class": "meta", text: meta }));
+    return h("div", { "class": "rrow" }, dot, info, tagText ? h("span", { "class": "tag " + tagClass, text: tagText }) : null);
+  }
+  function endLink() {
+    var b = h("button", { type: "button", "class": "linkbtn", text: "End game and show scores" });
+    b.addEventListener("click", finishGame);
+    return b;
+  }
+
+  function updateCompare() {
+    var box = $("cmpResult"), nextB = $("cmpNext");
+    if (!box) return;
+    box.textContent = "";
+    var res = computeResult();
+    if (nextB) nextB.disabled = !res;
+    if (!res) { box.appendChild(h("p", { "class": "gnote", text: "Type in everyone else's score and guess to see who won." })); return; }
+    var big = h("div", { "class": "reveal-score" }, h("b", { text: res.avg.toFixed(1) }), h("span", { text: "/ 10 group average" }));
+    big.firstChild.style.setProperty("--pill", bandVar(res.avg));
+    box.appendChild(big);
+    var list = h("div", { "class": "results" });
+    res.rows.slice().sort(function (a, b) { return a.diff - b.diff; }).forEach(function (row) {
+      var tagText = row.win ? (res.bullseye ? "Bullseye +2" : "Closest +1") : (row.drink ? "Drinks" : "");
+      list.appendChild(resultRow(row.i, game.players[row.i].name + (row.i === game.me ? " (you)" : ""),
+        "Guessed " + row.guess.toFixed(1) + " · scored " + row.score.toFixed(1) + " · off by " + row.diff.toFixed(1), tagText, row.win ? "win" : "drink"));
+    });
+    box.appendChild(list);
+    if (game.round % 3 === 0) box.appendChild(h("p", { "class": "gnote", text: "Water break: everyone has a glass of water before the next beer." }));
+  }
+
+  function renderGame() {
+    var host = $("gameBody"), ph = game.phase, revealOk = false;
+    host.textContent = "";
+    renderBoard();
+
+    if (ph === "off") {
+      host.appendChild(h("p", { "class": "gnote", text: "For 2 to 4 people, each on their own phone. Before tasting, everyone guesses the group's average score. Closest wins a point and the furthest off drinks." }));
+      host.appendChild(h("div", { "class": "actions" }, gbtn("Start a game", "primary", openSetup)));
+
+    } else if (ph === "setup") {
+      host.appendChild(h("p", { "class": "gnote", text: "Everyone starts a game on their own phone with the same player names, and ticks which name is theirs. Two to four players." }));
+      var grid = h("div", { "class": "names" });
+      game.names.forEach(function (n, i) {
+        var input = h("input", { id: "pname" + i, type: "text", maxlength: "20", placeholder: "Name", autocomplete: "off" });
+        input.value = n;
+        var radio = h("input", { type: "radio", name: "gameMe", id: "pme" + i });
+        radio.checked = i === game.me;
+        grid.appendChild(h("div", { "class": "name-row" },
+          h("div", { "class": "field" }, h("label", { "for": "pname" + i, text: "Player " + (i + 1) }), input),
+          h("label", { "class": "me", "for": "pme" + i }, radio, h("span", { text: "That's me" }))));
+      });
+      host.appendChild(grid);
+      var acts = h("div", { "class": "actions" });
+      acts.appendChild(gbtn("Start game", "primary", startGame));
+      if (game.names.length < 4) acts.appendChild(gbtn("Add a player", "", function () { readSetup(); game.names.push(""); renderGame(); }));
+      if (game.names.length > 2) acts.appendChild(gbtn("Remove last", "", function () { readSetup(); game.names.pop(); if (game.me >= game.names.length) game.me = 0; renderGame(); }));
+      acts.appendChild(gbtn("Cancel", "", function () { readSetup(); game.phase = "off"; gameSave(); renderGame(); }));
+      host.appendChild(acts);
+
+    } else if (ph === "guess") {
+      host.appendChild(h("div", { "class": "eyebrow", text: "Round " + game.round + " · your guess" }));
+      host.appendChild(h("p", { "class": "gnote", text: "Before you taste, what average score out of 10 will the whole group give this beer? Keep it to yourself until the compare step." }));
+      var nums = h("div", { "class": "nums", role: "group", "aria-label": "Your guess out of 10" });
+      nums.style.setProperty("--c", pcolor(game.me));
+      for (var n = 1; n <= 10; n++) {
+        (function (n) {
+          var b = h("button", { type: "button", "class": "num", "aria-pressed": String(game.pick === n), text: String(n) });
+          b.addEventListener("click", function () { game.pick = n; renderGame(); });
+          nums.appendChild(b);
+        })(n);
+      }
+      host.appendChild(nums);
+      var g = pickedGuess();
+      var half = gbtn("+ ½ point", "", function () { game.half = !game.half; renderGame(); }, !isNum(game.pick) || game.pick >= 10);
+      half.setAttribute("aria-pressed", String(game.half && isNum(game.pick) && game.pick < 10));
+      host.appendChild(h("div", { "class": "actions" },
+        gbtn(g === null ? "Lock in guess" : "Lock in " + g.toFixed(1), "primary", lockGuess, g === null), half));
+      host.appendChild(endLink());
+
+    } else if (ph === "judge") {
+      var beer = beerById(game.beerId), avg = beer ? average(beer) : null;
+      host.appendChild(h("div", { "class": "eyebrow", text: "Round " + game.round + " · guess locked at " + game.myGuess.toFixed(1) }));
+      if (!beer) {
+        host.appendChild(h("p", { "class": "gnote", text: "The beer for this round was removed. Start a new round to keep playing." }));
+        host.appendChild(h("div", { "class": "actions" }, gbtn("Start a new round", "primary", startRound)));
+      } else {
+        var label = beer.name.trim() ? beer.name.trim() : "the beer";
+        host.appendChild(h("p", { "class": "gnote", text: "Now judge " + label + " in the judging card, rating at least one aspect. When everyone has finished, tap Compare scores." }));
+        var jacts = h("div", { "class": "actions" });
+        jacts.appendChild(gbtn("Compare scores", "primary", goCompare, avg === null));
+        if (state.currentId !== game.beerId) jacts.appendChild(gbtn("Go to this beer", "", function () { select(game.beerId, true); }));
+        host.appendChild(jacts);
+        revealOk = avg !== null && state.currentId === game.beerId;
+      }
+      host.appendChild(endLink());
+
+    } else if (ph === "compare") {
+      var cb = beerById(game.beerId), myAvg = cb ? average(cb) : null;
+      host.appendChild(h("div", { "class": "eyebrow", text: "Round " + game.round + " · compare" }));
+      if (myAvg === null) {
+        host.appendChild(h("p", { "class": "gnote", text: "This round's beer has no score on this phone. Go back and rate it, or start a new round." }));
+        host.appendChild(h("div", { "class": "actions" }, gbtn("Back to judging", "primary", backToJudging), gbtn("Start a new round", "", startRound)));
+      } else {
+        host.appendChild(h("p", { "class": "gnote", text: "Read your numbers out, then type in everyone else's score and guess." }));
+        host.appendChild(h("div", { "class": "mine" },
+          h("div", null, h("span", { "class": "eyebrow", text: "Your score" }), h("b", { text: (Math.round(myAvg * 10) / 10).toFixed(1) })),
+          h("div", null, h("span", { "class": "eyebrow", text: "Your guess" }), h("b", { text: game.myGuess.toFixed(1) }))));
+        var cmp = h("div", { "class": "cmp" }, h("div", { "class": "cmp-head" }, h("span", { text: "Others" }), h("span", { text: "Score" }), h("span", { text: "Guess" })));
+        game.players.forEach(function (p, i) {
+          if (i === game.me) return;
+          var o = game.others[i] || (game.others[i] = { score: "", guess: "" });
+          var sIn = h("input", { id: "os" + i, type: "text", inputmode: "decimal", maxlength: "4", placeholder: "7.5", autocomplete: "off", "aria-label": p.name + " score" });
+          var gIn = h("input", { id: "og" + i, type: "text", inputmode: "decimal", maxlength: "4", placeholder: "7.0", autocomplete: "off", "aria-label": p.name + " guess" });
+          sIn.value = o.score; gIn.value = o.guess;
+          sIn.addEventListener("input", function () { o.score = sIn.value; gameSave(); updateCompare(); });
+          gIn.addEventListener("input", function () { o.guess = gIn.value; gameSave(); updateCompare(); });
+          var dot = h("i", { "class": "rdot" }); dot.style.setProperty("--pc", pcolor(i));
+          cmp.appendChild(h("div", { "class": "cmp-row" }, h("span", { "class": "nm" }, dot, h("span", { text: p.name })), sIn, gIn));
+        });
+        host.appendChild(cmp);
+        host.appendChild(h("div", { id: "cmpResult" }));
+        var nb = gbtn("Next beer", "primary", nextBeer, true); nb.id = "cmpNext";
+        host.appendChild(h("div", { "class": "actions" }, nb, gbtn("Finish game", "", finishGame), gbtn("Back to judging", "", backToJudging)));
+        updateCompare();
+      }
+
+    } else if (ph === "final") {
+      var sorted = game.players.map(function (p, i) { return { i: i, name: p.name, points: p.points }; })
+        .sort(function (a, b) { return b.points - a.points; });
+      var top = sorted.length ? sorted[0].points : 0;
+      var winners = sorted.filter(function (x) { return x.points === top; });
+      host.appendChild(h("div", { "class": "eyebrow", text: "Final scores after " + game.round + (game.round === 1 ? " round" : " rounds") }));
+      host.appendChild(h("div", { "class": "final-title", text: top === 0 ? "No points scored" : (winners.length > 1 ? "Tied: " : "Winner: ") + winners.map(function (w) { return w.name; }).join(" and ") }));
+      var fl = h("div", { "class": "results" });
+      sorted.forEach(function (x) { fl.appendChild(resultRow(x.i, x.name, "", x.points + (x.points === 1 ? " point" : " points"), "pts")); });
+      host.appendChild(fl);
+      host.appendChild(h("div", { "class": "actions" }, gbtn("Play again", "primary", playAgain), gbtn("Change players", "", openSetup), gbtn("Close game", "", closeGame)));
+    }
+    $("revealBtn").hidden = !revealOk;
   }
 
   /* ---------- share image ---------- */
@@ -930,9 +1276,12 @@ button, input, textarea { font: inherit; color: inherit; }
 
   buildAspects();
   load();
+  gameLoad();
   bind();
+  $("revealBtn").addEventListener("click", goCompare);
   syncForm();
   renderFlight();
+  renderGame();
   save();
   if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
     window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
